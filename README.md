@@ -1,102 +1,163 @@
 # .NET 10 CLR API Documentation Site
 
-This folder contains a DocFX configuration for generating a local documentation site from the .NET 10 reference assemblies installed on this machine.
+This repository contains a DocFX configuration for generating a local documentation site from the .NET reference assemblies installed with the active .NET SDK.
 
-The generated site documents the public .NET 10 runtime and base class library API surface from `Microsoft.NETCore.App.Ref`. It is useful for browsing namespaces, types, members, XML documentation comments, and API relationships locally.
+The default target is `.NET 10` / `net10.0`. The generated site documents the public API surface exposed by `Microsoft.NETCore.App.Ref`, including runtime-facing namespaces such as `System`, `System.Runtime`, `System.Reflection`, `System.Threading`, and related base class library APIs.
 
 ## Requirements
 
-- Windows, or another OS with an equivalent .NET SDK/reference-pack path configured in `docfx.json`.
-- .NET 10 SDK installed.
-- DocFX installed and available on `PATH`.
-- The .NET 10 reference pack installed at:
+- .NET 10 SDK, or another SDK/ref-pack version if you retarget the configuration.
+- DocFX available on `PATH`.
+- A shell capable of running one of the included build wrappers.
 
-```text
-C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.*\ref\net10.0\
+The build wrappers discover the active dotnet installation from `dotnet --info`, find the latest installed `.NET 10` reference pack, set `DOCFX_NETCORE_APP_REF`, and run DocFX.
+
+Expected reference-pack layout:
+
+```
+<dotnet-root>/packs/Microsoft.NETCore.App.Ref/<10.x version>/ref/net10.0/
 ```
 
-This machine currently has:
+## Install DocFX
 
-```text
-.NET SDK 10.0.302
-DocFX 2.78.5
-Microsoft.NETCore.App.Ref 10.0.10
+Install DocFX as a .NET global tool:
+
+```
+dotnet tool install -g docfx
+```
+
+Verify it is available:
+
+```
+docfx --version
+```
+
+If `docfx` is already installed, update it with:
+
+```
+dotnet tool update -g docfx
+```
+
+## Build
+
+Use the wrapper for your shell.
+
+PowerShell:
+
+```
+pwsh -NoProfile -File ./build-docs.ps1
+```
+
+POSIX shell:
+
+```
+sh ./build-docs.sh
+```
+
+The build creates:
+
+- `api/.manifest`
+- `api/**/*.yml`
+- `_site/`
+
+Those generated files are ignored by Git. The source files for the documentation site remain tracked separately.
+
+## Serve
+
+After building, serve the generated site:
+
+```
+docfx serve ./_site
+```
+
+Open:
+
+```
+http://localhost:8080
+```
+
+Use a different port if needed:
+
+```
+docfx serve ./_site --port 5000
+```
+
+Open:
+
+```
+http://localhost:5000
 ```
 
 ## Files
 
 - `docfx.json`: DocFX configuration.
+- `build-docs.ps1`: PowerShell build wrapper.
+- `build-docs.sh`: POSIX shell build wrapper.
 - `index.md`: site landing page.
 - `toc.yml`: top-level site navigation.
 - `runtime-map.md`: curated entry points into important runtime and BCL APIs.
 - `api/index.md`: intro page for the generated API reference section.
-- `api/**/*.yml`: generated API metadata files created by DocFX.
+- `api/.manifest`: generated DocFX metadata manifest.
+- `api/**/*.yml`: generated DocFX API metadata.
 - `_site/`: generated static HTML site.
 
-## Build The Site
+## Manual Build
 
-Run this from this folder:
+The wrappers are only responsible for discovering the reference-pack path. You can also set `DOCFX_NETCORE_APP_REF` yourself and run DocFX directly.
 
-```powershell
-docfx .\docfx.json
+POSIX shell:
+
+```
+export DOCFX_NETCORE_APP_REF="<dotnet-root>/packs/Microsoft.NETCore.App.Ref/<10.x version>"
+docfx ./docfx.json
 ```
 
-DocFX will:
+PowerShell:
 
-1. Read the .NET 10 reference assemblies from `Microsoft.NETCore.App.Ref`.
-2. Generate API metadata into `api/`.
-3. Build the static documentation site into `_site/`.
-
-## Serve The Site Locally
-
-After building, run:
-
-```powershell
-docfx serve .\_site
+```
+$env:DOCFX_NETCORE_APP_REF = "<dotnet-root>/packs/Microsoft.NETCore.App.Ref/<10.x version>"
+docfx ./docfx.json
 ```
 
-Open the site at:
+## Rebuild
 
-```text
-http://localhost:8080
+Rebuild after changing any source documentation or DocFX configuration:
+
+```
+sh ./build-docs.sh
 ```
 
-If port `8080` is already in use, choose another port:
+Or:
 
-```powershell
-docfx serve .\_site --port 5000
+```
+pwsh -NoProfile -File ./build-docs.ps1
 ```
 
-Then open:
+If `docfx serve` is already running, restart it after rebuilding to ensure all generated files are picked up.
 
-```text
-http://localhost:5000
-```
+## Retargeting
 
-## Rebuild After Changes
+This repository targets `net10.0` by default. To document a different framework version, update these together:
 
-If you edit `index.md`, `runtime-map.md`, `toc.yml`, `api/index.md`, or `docfx.json`, rebuild with:
-
-```powershell
-docfx .\docfx.json
-```
-
-Then refresh the browser. If `docfx serve` is still running, you may need to stop and restart it to pick up all generated-file changes.
+- `TargetFramework` in `docfx.json`
+- the `files` path in `docfx.json`
+- the reference-pack version filter in `build-docs.ps1`
+- the reference-pack version filter in `build-docs.sh`
 
 ## Expected Warnings
 
-The build may show warnings like `InvalidCref`. These come from unresolved cross-reference values inside XML documentation comments shipped with the .NET reference pack. They do not usually mean this local DocFX configuration is broken.
+The build may show warnings such as `InvalidCref`. These usually come from unresolved cross-reference values inside XML documentation comments shipped with the .NET reference pack. They do not normally mean this DocFX configuration is broken.
 
 A successful build ends with output similar to:
 
-```text
+```
 Build succeeded with warning.
 0 error(s)
 ```
 
 ## What This Documents
 
-This setup documents the public .NET 10 API surface exposed by the installed reference assemblies, including areas such as:
+This setup documents the public .NET API surface exposed by the installed reference assemblies, including areas such as:
 
 - `System`
 - `System.Reflection`
@@ -128,49 +189,45 @@ For those topics, use the `dotnet/runtime` source tree and its documentation. A 
 
 ## Troubleshooting
 
-### `docfx` is not recognized
+### `docfx` Is Not Recognized
 
-Install DocFX as a .NET global tool:
+Verify that DocFX is installed and available on `PATH`:
 
-```powershell
-dotnet tool install -g docfx
+```
+docfx --version
 ```
 
-If it is already installed, make sure the .NET tools folder is on `PATH`:
+If needed, install or update the DocFX global tool:
 
-```text
-%USERPROFILE%\.dotnet\tools
+```
+dotnet tool install -g docfx
+dotnet tool update -g docfx
 ```
 
 ### No API Pages Are Generated
 
-Check that the .NET 10 reference pack exists:
+Check the active SDK installation:
 
-```powershell
-Test-Path "C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref"
 ```
-
-Then list installed SDKs:
-
-```powershell
+dotnet --info
 dotnet --list-sdks
 ```
 
-If the reference pack path or version is different, update the `src` and `files` values in `docfx.json`.
+Make sure the active SDK has a matching `Microsoft.NETCore.App.Ref` reference pack for the target framework.
 
 ### Port Is Already In Use
 
 Serve the site on a different port:
 
-```powershell
-docfx serve .\_site --port 5000
+```
+docfx serve ./_site --port 5000
 ```
 
 ### Search Does Not Work Immediately
 
-Make sure the site was built before serving:
+Build before serving:
 
-```powershell
-docfx .\docfx.json
-docfx serve .\_site
+```
+sh ./build-docs.sh
+docfx serve ./_site
 ```

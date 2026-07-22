@@ -4,9 +4,9 @@
     {
       "src": [
         {
-          "src": "C:/Program Files/dotnet/packs/Microsoft.NETCore.App.Ref",
+          "src": "%DOCFX_NETCORE_APP_REF%",
           "files": [
-            "10.*/ref/net10.0/*.dll"
+            "ref/net10.0/*.dll"
           ]
         }
       ],
